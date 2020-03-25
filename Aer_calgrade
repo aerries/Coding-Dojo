@@ -1,0 +1,48 @@
+create or replace procedure proc_student_calgrade_all
+Is
+  student_grade varchar(1);
+Begin
+
+  truncate table 'tmp_student_calgrade';
+
+  insert into tmp_student_callgrade(student_id,student_score,student_grade)
+  select student_id,student_score
+    ,fnc_calgrade_indv(student_score)
+  from tbl_student
+  where student_grade is null;
+  
+  merge into tbl_student tgt
+  using (
+    select student_id,student_grade
+    from tmp_student_calgrade
+  ) src
+  on (tgt.student_id = src.student_id)
+  when matched then update set tgt.student_grade = src.student_grade;
+  
+  commit;
+  
+Exception
+  When others then
+    raise_application_error('00001','An error was encountered - '||SQLCODE||' -ERROR- '||SQLERRM);
+  
+End;
+
+create or replace function fnc_student_calgrade_indv
+return varchar(1)
+Is
+  v_grade varchar(1)
+Begin
+  
+  v_grade := case when student_score < 61 then 'F'
+      when student_score < 71 then 'D'
+      when student_score < 81 then 'C'
+      when student_score < 91 then 'B'
+      else 'A'
+    end;
+    
+  return v_grade;  
+    
+Exception
+  when Ohters then
+    return 'N'
+End;
